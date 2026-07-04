@@ -1,0 +1,6 @@
+{
+  "name": "Galaxy RF FM Tuner",
+  "description": "Production RF FM Tuner & Hardware Diagnostic tool tailored for Samsung Galaxy Tab A9+ 5G (Qualcomm SM6375) with direct HAL, framework, and audio routing probes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
