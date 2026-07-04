@@ -29,6 +29,7 @@ import com.example.ui.screens.TunerScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.MainViewModel
 
+@android.annotation.SuppressLint("InvalidFragmentVersionForActivityResult")
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()

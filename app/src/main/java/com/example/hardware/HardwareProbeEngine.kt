@@ -138,7 +138,8 @@ class HardwareProbeEngine(private val context: Context) {
             val getServiceMethod = serviceManagerClass.getMethod("getService", String::class.java)
             val listServicesMethod = serviceManagerClass.getMethod("listServices")
 
-            val allServices = listServicesMethod.invoke(null) as? Array<String> ?: emptyArray()
+            @Suppress("UNCHECKED_CAST")
+            val allServices = (listServicesMethod.invoke(null) as? Array<String>) ?: emptyArray()
             for (serviceName in targetServices) {
                 if (allServices.contains(serviceName)) {
                     val binder = getServiceMethod.invoke(null, serviceName)

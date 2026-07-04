@@ -57,7 +57,7 @@ fun DiagnosticsScreen(
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("System Environment", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Divider()
+                    HorizontalDivider()
                     DiagRow("Device Model:", "Samsung Galaxy Tab A9+ 5G (SM-X216B)")
                     DiagRow("Chipset / SoC:", "Qualcomm Snapdragon 695 5G (SM6375)")
                     DiagRow("CPU Arch:", "ARM64-v8a")
