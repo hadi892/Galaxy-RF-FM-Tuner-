@@ -32,25 +32,16 @@ class FmRadioRepository(private val context: Context) {
 
     private var activeBackend: FmTunerBackend? = null
 
-    val currentStation: StateFlow<FmStation> = MutableStateFlow(
+    private val _currentStation = MutableStateFlow(
         FmStation(87.5f, "Initialize...", "--", "Probing hardware interfaces...", "--")
-    ).also { state ->
-        CoroutineScope(Dispatchers.IO).launch {
-            activeBackend?.currentStation?.collect { (state as MutableStateFlow).value = it }
-        }
-    }.asStateFlow()
+    )
+    val currentStation: StateFlow<FmStation> = _currentStation.asStateFlow()
 
-    val isPoweredOn: StateFlow<Boolean> = MutableStateFlow(false).also { state ->
-        CoroutineScope(Dispatchers.IO).launch {
-            activeBackend?.isPoweredOn?.collect { (state as MutableStateFlow).value = it }
-        }
-    }.asStateFlow()
+    private val _isPoweredOn = MutableStateFlow(false)
+    val isPoweredOn: StateFlow<Boolean> = _isPoweredOn.asStateFlow()
 
-    val isScanning: StateFlow<Boolean> = MutableStateFlow(false).also { state ->
-        CoroutineScope(Dispatchers.IO).launch {
-            activeBackend?.isScanning?.collect { (state as MutableStateFlow).value = it }
-        }
-    }.asStateFlow()
+    private val _isScanning = MutableStateFlow(false)
+    val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
 
     val allPresets: Flow<List<FmPresetEntity>> = presetDao.getAllPresets()
 
@@ -86,17 +77,17 @@ class FmRadioRepository(private val context: Context) {
             // Monitor activeBackend flows
             launch {
                 activeBackend?.currentStation?.collect { st ->
-                    (currentStation as MutableStateFlow).value = st
+                    _currentStation.value = st
                 }
             }
             launch {
                 activeBackend?.isPoweredOn?.collect { p ->
-                    (isPoweredOn as MutableStateFlow).value = p
+                    _isPoweredOn.value = p
                 }
             }
             launch {
                 activeBackend?.isScanning?.collect { sc ->
-                    (isScanning as MutableStateFlow).value = sc
+                    _isScanning.value = sc
                 }
             }
         }
