@@ -50,6 +50,26 @@ class RealHardwareFmTunerBackend(
         onLog("HardwareBackend", "INFO", "Attempting real hardware power ON using backend: ${capabilities.backendType.displayName}")
         
         when (capabilities.backendType) {
+            FmBackendType.LINUX_V4L2_DRIVER -> {
+                try {
+                    val file = java.io.File("/dev/radio0")
+                    if (file.exists() && file.canRead() && file.canWrite()) {
+                        val raf = java.io.RandomAccessFile(file, "rw")
+                        _isPoweredOn.value = true
+                        onLog("V4L2 Driver", "SUCCESS", "Direct open(/dev/radio0, O_RDWR) succeeded.")
+                        raf.close()
+                        return true
+                    } else {
+                        onLog("V4L2 Driver", "RESTRICTED", "open(/dev/radio0) blocked by Android 16 SELinux mandatory access control (u:r:untrusted_app:s0).")
+                        _isPoweredOn.value = false
+                        return false
+                    }
+                } catch (e: Throwable) {
+                    onLog("V4L2 Driver", "ERROR", "Direct character device open failed: ${e.message}")
+                    _isPoweredOn.value = false
+                    return false
+                }
+            }
             FmBackendType.QUALCOMM_FMRADIO_HAL -> {
                 try {
                     val clazz = Class.forName("qcom.fmradio.FmReceiver")

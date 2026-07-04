@@ -1,6 +1,10 @@
 package com.example.model
 
 enum class FmBackendType(val displayName: String, val description: String) {
+    LINUX_V4L2_DRIVER(
+        "Linux V4L2 Driver (/dev/radio0)",
+        "Direct Linux V4L2 character device driver probe (/dev/radio0) & vendor JNI libraries."
+    ),
     QUALCOMM_FMRADIO_HAL(
         "Qualcomm FM HAL (qcom.fmradio)",
         "Direct Qualcomm Snapdragon FM hardware interface via qcom.fmradio.FmReceiver / vendor HAL."

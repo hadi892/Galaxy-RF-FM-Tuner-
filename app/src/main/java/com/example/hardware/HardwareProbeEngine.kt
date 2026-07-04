@@ -16,28 +16,32 @@ class HardwareProbeEngine(private val context: Context) {
     fun probeAllBackends(): List<BackendCapabilities> {
         val results = mutableListOf<BackendCapabilities>()
 
-        // 1. Probe Qualcomm FM HAL (Snapdragon SM6375 / qcom.fmradio)
+        // 1. Probe Linux Kernel V4L2 Character Device Node (/dev/radio0)
+        results.add(probeV4l2Driver())
+
+        // 2. Probe Qualcomm FM HAL (Snapdragon SM6375 / qcom.fmradio)
         results.add(probeQualcommHal())
 
-        // 2. Probe Samsung FM Framework
+        // 3. Probe Samsung FM Framework
         results.add(probeSamsungFramework())
 
-        // 3. Probe Binder Services
+        // 4. Probe Binder Services
         results.add(probeBinderServices())
 
-        // 4. Probe Audio HAL / AudioDeviceInfo for TYPE_FM / TYPE_FM_TUNER
+        // 5. Probe Audio HAL / AudioDeviceInfo for TYPE_FM / TYPE_FM_TUNER
         results.add(probeAudioHal())
 
         return results
     }
 
     fun selectBestBackend(probed: List<BackendCapabilities>): FmBackendType {
-        // Priority order: Qualcomm HAL -> Samsung Framework -> Binder -> Audio HAL
+        // Priority order: Linux V4L2 -> Qualcomm HAL -> Samsung Framework -> Binder -> Audio HAL
         val accessible = probed.filter { it.isAccessible }
         if (accessible.isEmpty()) {
             return FmBackendType.NONE_RESTRICTED
         }
         val priority = listOf(
+            FmBackendType.LINUX_V4L2_DRIVER,
             FmBackendType.QUALCOMM_FMRADIO_HAL,
             FmBackendType.SAMSUNG_FM_FRAMEWORK,
             FmBackendType.SAMSUNG_BINDER_SERVICE,
@@ -49,6 +53,49 @@ class HardwareProbeEngine(private val context: Context) {
             }
         }
         return accessible.first().backendType
+    }
+
+    private fun probeV4l2Driver(): BackendCapabilities {
+        val targetNodes = listOf("/dev/radio0", "/dev/radio1", "/dev/smd7", "/dev/qmi0")
+        val foundNodes = mutableListOf<String>()
+        var nodeAccessible = false
+        var restrictionReason: String? = null
+
+        for (path in targetNodes) {
+            val file = java.io.File(path)
+            if (file.exists()) {
+                val canRead = file.canRead()
+                val canWrite = file.canWrite()
+                foundNodes.add("$path (Exists: true, Read: $canRead, Write: $canWrite)")
+                if (canRead && canWrite) {
+                    nodeAccessible = true
+                }
+            }
+        }
+
+        val targetLibs = listOf("libqcomfm_jni.so", "libfmjni.so", "libfm_jni.so")
+        for (lib in targetLibs) {
+            val libFile = java.io.File("/system/lib64/$lib")
+            val vendorFile = java.io.File("/vendor/lib64/$lib")
+            if (libFile.exists() || vendorFile.exists()) {
+                foundNodes.add("Found vendor library: $lib")
+            }
+        }
+
+        if (foundNodes.isEmpty()) {
+            restrictionReason = "Character device nodes (/dev/radio0) and native vendor FM libraries not present or hidden from sandbox filesystem."
+        } else if (!nodeAccessible) {
+            restrictionReason = "Device /dev/radio0 detected, but direct character device open is restricted by Android 16 SELinux mandatory access control (DAC/MAC) for untrusted_app domain."
+        }
+
+        return BackendCapabilities(
+            backendType = FmBackendType.LINUX_V4L2_DRIVER,
+            isAccessible = nodeAccessible,
+            classLoaded = foundNodes.isNotEmpty(),
+            binderFound = false,
+            accessibleMethods = foundNodes.ifEmpty { listOf("No /dev/radio nodes readable in unprivileged sandbox") },
+            restrictionReason = restrictionReason
+        )
     }
 
     private fun probeQualcommHal(): BackendCapabilities {
